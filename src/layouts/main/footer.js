@@ -32,15 +32,15 @@ const LINKS = [
   {
     headline: 'Become a issuer',
     children: [
-      { name: 'Issuer' , href: paths.issuer },
+      { name: 'Issuer', href: paths.issuer },
     ],
   },
   {
     headline: 'Resources',
     children: [
-      { name: 'Blog', href: paths.post.root},
-      { name: 'Bonds Calculator' , href: paths.calculator },
-      { name: 'News & Insight', hre: paths.newsInsight},
+      { name: 'Blog', href: paths.post.root },
+      { name: 'Bonds Calculator', href: paths.calculator },
+      { name: 'News & Insight', hre: paths.newsInsight },
     ],
   },
   {
@@ -112,10 +112,19 @@ export default function Footer() {
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 1,
+                width: '100'
               }}
             >
-              <Logo />
-              
+              <img
+                src="/logo/footer-logo.png"
+                alt="Footer Logo"
+                style={{
+                  width: 150,
+                  height: 'auto',
+                }}
+              />
+
+
             </Box>
             <Typography
               variant="body2"
