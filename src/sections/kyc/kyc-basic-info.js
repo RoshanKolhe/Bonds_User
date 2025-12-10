@@ -47,8 +47,6 @@ export default function KYCBasicInfo() {
   const { Sectors, SectorsEmpty } = useGetSectors();
   const { EntityTypes, EntityTypesEmpty } = useGetEntityTypes();
 
-
-
   useEffect(() => {
     if (Sectors && !SectorsEmpty) {
       setSectorOptions(Sectors);
@@ -64,7 +62,6 @@ export default function KYCBasicInfo() {
       setEntityOptions([]);
     }
   }, [EntityTypes, EntityTypesEmpty]);
-
 
   const [humanInteraction, setHumanInteraction] = useState({
     companyName: false,
@@ -102,9 +99,8 @@ export default function KYCBasicInfo() {
     panNumber: Yup.string().required('PAN Number is required'),
     dateOfBirth: Yup.date().required('Date Of Birth is required'),
     panHoldersName: Yup.string().required("PAN Holder's Name is required"),
-    companyEntityTypeId: Yup.string().required("Entity Type is required"),
-    companySectorTypeId: Yup.string().required("Sector is required"),
-
+    companyEntityTypeId: Yup.string().required('Entity Type is required'),
+    companySectorTypeId: Yup.string().required('Sector is required'),
   });
 
   const defaultValues = useMemo(
@@ -121,7 +117,7 @@ export default function KYCBasicInfo() {
       panNumber: '',
       dateOfBirth: null,
       panHoldersName: '',
- 
+
       panCardDocumentId: '',
       humanInteraction: { ...humanInteraction },
     }),
@@ -167,7 +163,6 @@ export default function KYCBasicInfo() {
       setUploadedPanFile(uploaded);
       setValue('panCardDocumentId', uploaded.id, { shouldValidate: true });
 
-
       const extractRes = await axiosInstance.post('/extract/pan-info', uploadFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -175,7 +170,10 @@ export default function KYCBasicInfo() {
 
       // Adjust these keys according to your actual API response
       const panNumberFromApi = panData?.panNumber || panData?.extractedPanNumber || '';
-      const dobFromApi = panData?.dateOfBirth || panData?.extractedDateOfBirth || null;
+      const dobFromApi =
+        panData.extractedDateOfBirth && panData.extractedDateOfBirth !== ''
+          ? panData.extractedDateOfBirth
+          : null;
       const companyNameFromApi = panData?.companyName || panData?.extractedCompanyName || '';
 
       if (!panNumberFromApi && !dobFromApi && !companyNameFromApi) {
@@ -243,9 +241,7 @@ export default function KYCBasicInfo() {
         ? dayjs(formData.dateOfIncorporation).format('YYYY-MM-DD')
         : '';
 
-      const dobStr = formData.dateOfBirth
-        ? dayjs(formData.dateOfBirth).format('YYYY-MM-DD')
-        : '';
+      const dobStr = formData.dateOfBirth ? dayjs(formData.dateOfBirth).format('YYYY-MM-DD') : '';
 
       const companyName = formData.companyName || '';
       const panNumber = formData.panNumber || '';
@@ -315,7 +311,6 @@ export default function KYCBasicInfo() {
         panCardDocumentId: formData.panCardDocumentId || '',
         companySectorTypeId: formData.companySectorTypeId,
         companyEntityTypeId: formData.companyEntityTypeId,
-
       };
 
       console.log('Submitting payload to /auth/company-registration:', payload);
@@ -328,7 +323,7 @@ export default function KYCBasicInfo() {
         });
 
         // Store returned status
-        localStorage.setItem("kycStatus", response.data.kycStatus);
+        localStorage.setItem('kycStatus', response.data.kycStatus);
 
         // Redirect based on KYC Status
         if (response.data.kycStatus === 0) {
@@ -341,7 +336,6 @@ export default function KYCBasicInfo() {
       } else {
         throw new Error(response?.data?.message || 'Registration failed');
       }
-
 
       reset();
     } catch (error) {
@@ -356,7 +350,6 @@ export default function KYCBasicInfo() {
       );
     }
   });
-
 
   // ----------------------------------------------------------------------
 
@@ -414,7 +407,10 @@ export default function KYCBasicInfo() {
                           try {
                             const payload = { CIN: cinValue?.trim()?.toUpperCase() };
 
-                            const response = await axiosInstance.post(`/extraction/company-info`, payload);
+                            const response = await axiosInstance.post(
+                              `/extraction/company-info`,
+                              payload
+                            );
 
                             const data = response?.data?.data;
 
@@ -462,7 +458,7 @@ export default function KYCBasicInfo() {
                             console.error('Error fetching CIN:', error);
                             enqueueSnackbar(
                               error.response?.data?.message ||
-                              'Failed to fetch CIN data. Please check CIN or try again.',
+                                'Failed to fetch CIN data. Please check CIN or try again.',
                               { variant: 'error' }
                             );
                           }
@@ -567,7 +563,7 @@ export default function KYCBasicInfo() {
                 <RHFTextField
                   name="msmeUdyamRegistrationNo"
                   placeholder="Enter your MSME/Udyam Registration No."
-                // onFocus={() => handleHumanInteraction('msmeUdyamRegistrationNo')}
+                  // onFocus={() => handleHumanInteraction('msmeUdyamRegistrationNo')}
                 />
               </Box>
             </Grid>
@@ -643,7 +639,6 @@ export default function KYCBasicInfo() {
                         </MenuItem>
                       ))}
                     </RHFSelect>
-
                   </Box>
                   <Box sx={{ flex: 1 }}>
                     <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -809,8 +804,8 @@ export default function KYCBasicInfo() {
             Save & Continue
           </LoadingButton>
         </Box>
-      </FormProvider >
+      </FormProvider>
       <KYCFooter />
-    </Container >
+    </Container>
   );
 }
