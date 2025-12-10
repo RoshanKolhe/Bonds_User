@@ -185,7 +185,7 @@ export default function BondLibraryCardGrid({ item }) {
               <Typography variant="caption" sx={{ opacity: 0.72 }}>
                 Price
               </Typography>
-              <Typography variant="caption">₹{item?.price || 'N.A.'}</Typography>
+              <Typography variant="caption">₹{item?.issue_price_rs || 'N.A.'}</Typography>
             </Stack>
           </Grid>
 
