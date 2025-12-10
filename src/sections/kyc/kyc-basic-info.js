@@ -175,7 +175,7 @@ export default function KYCBasicInfo() {
 
       // Adjust these keys according to your actual API response
       const panNumberFromApi = panData?.panNumber || panData?.extractedPanNumber || '';
-      const dobFromApi = panData?.dateOfBirth || panData?.extractedDateOfBirth || '';
+      const dobFromApi = panData?.dateOfBirth || panData?.extractedDateOfBirth || null;
       const companyNameFromApi = panData?.companyName || panData?.extractedCompanyName || '';
 
       if (!panNumberFromApi && !dobFromApi && !companyNameFromApi) {
@@ -726,11 +726,11 @@ export default function KYCBasicInfo() {
                       handleHumanInteraction('dateOfBirth');
                     }}
                     onOpen={() => handleHumanInteraction('dateOfBirth')}
-                    format="dd-MM-yyyy"
+                    format="yyyy-MM-dd"
                     slotProps={{
                       textField: {
                         fullWidth: true,
-                        placeholder: 'DD-MM-YYYY',
+                        placeholder: 'YYYY-MM-DD',
                         error: !!error,
                         helperText: error?.message,
                       },
