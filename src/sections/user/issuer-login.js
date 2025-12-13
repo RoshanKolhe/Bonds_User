@@ -32,41 +32,64 @@ export default function MultiStepLoginDialog({ open, onClose }) {
   const { enqueueSnackbar } = useSnackbar();
   const otpRefs = useRef([]);
   const router = useRouter();
+  const RESEND_TIME = 30;
 
-const handleVerifyEmailOtp = async () => {
-  if (isVerifying) return;
+  const [timer, setTimer] = useState(RESEND_TIME);
+  const [canResend, setCanResend] = useState(false);
+  const timerRef = useRef(null);
 
-  const code = otp.join("");
-  if (code.length !== 4) return;
+  const startTimer = () => {
+    setTimer(60);
+    setCanResend(false);
 
-  setIsVerifying(true);
+    const interval = setInterval(() => {
+      setTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setCanResend(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
 
-  const sessionId = localStorage.getItem("sessionId");
 
-  try {
-    const res = await axiosInstance.post(`/auth/verify-email-otp`, {
-      sessionId,
-      otp: code,
-    });
+  const handleVerifyEmailOtp = async () => {
+    if (isVerifying) return;
 
-    enqueueSnackbar(res.data?.message || "Email Verified!", {
-      variant: "success",
-    });
+    const code = otp.join("");
+    if (code.length !== 4) return;
 
-    // Close dialog if available
-    onClose?.();
+    setIsVerifying(true);
 
-    // Redirect to next onboarding step
-    router.push("/kyc/basic-info");
-  } catch (err) {
-    enqueueSnackbar(err?.response?.data?.message || err.message, {
-      variant: "error",
-    });
-  } finally {
-    setIsVerifying(false);
-  }
-};
+
+    const sessionId = localStorage.getItem("sessionId");
+
+    try {
+      const res = await axiosInstance.post(`/auth/verify-email-otp`, {
+        sessionId,
+        otp: code,
+      });
+
+      enqueueSnackbar(res.data?.message || "Email Verified!", {
+        variant: "success",
+      });
+
+      // Close dialog if available
+      onClose?.();
+
+      // Redirect to next onboarding step
+      router.push("/kyc/basic-info");
+    } catch (err) {
+      enqueueSnackbar(err?.error?.message || err.message, {
+        variant: "error",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
 
 
@@ -78,28 +101,37 @@ const handleVerifyEmailOtp = async () => {
 
     setIsSendingEmail(true);
 
-
-    const sessionId = localStorage.getItem("sessionId");
+    const sessionId = localStorage.getItem('sessionId');
 
     try {
-      const res = await axiosInstance.post(`/auth/send-email-otp`, {
+      const res = await axiosInstance.post('/auth/send-email-otp', {
         sessionId,
         email,
       });
 
-      enqueueSnackbar(res.data?.message || "Email OTP Sent!", { variant: "success" });
-
-      setOtp(Array(4).fill(""));
-      setOtpStarted(false);
-      setStep("emailOtp");
-    } catch (err) {
-      enqueueSnackbar(err.error?.message || "Something went wrong!", {
-        variant: "error",
+      enqueueSnackbar(res.data?.message || 'Email OTP Sent!', {
+        variant: 'success',
       });
+
+      // reset OTP input
+      setOtp(Array(4).fill(''));
+      setOtpStarted(false);
+
+      // move to email OTP screen
+      setStep('emailOtp');
+
+      // 🔥 START RESEND TIMER (same as phone)
+      startTimer();
+    } catch (err) {
+      enqueueSnackbar(
+        err?.error?.message || 'Something went wrong!',
+        { variant: 'error' }
+      );
     } finally {
       setIsSendingEmail(false);
     }
   };
+
 
 
 
@@ -167,38 +199,94 @@ const handleVerifyEmailOtp = async () => {
   const login_img = '/assets/images/issuer-login/login-img.png'; // replace with your image
 
   const handleGetMobileOtp = async () => {
-    if (isSending) return;
-    if (mobile.length !== 10) return;
+    if (isSending || mobile.length !== 10) return;
 
     setIsSending(true);
 
     try {
-      const res = await axiosInstance.post(`/auth/send-phone-otp`, {
+      const res = await axiosInstance.post('/auth/send-phone-otp', {
         phone: mobile,
-        role: "company", // Hardcoded role
+        role: 'company',
       });
 
-      // ✓ Show success
-      enqueueSnackbar(res.data?.message || "OTP Sent!", { variant: "success" });
+      enqueueSnackbar(res.data?.message || 'OTP Sent!', { variant: 'success' });
 
-      // ✓ Store session ID from backend
       if (res.data?.sessionId) {
-        localStorage.setItem("sessionId", res.data.sessionId);
+        localStorage.setItem('sessionId', res.data.sessionId);
       }
-      // ✓ Reset OTP state
-      setOtp(Array(4).fill(""));
-      setOtpStarted(false);
 
-      // ✓ Move to OTP screen
-      setStep("otp");
+      setOtp(Array(4).fill(''));
+      setOtpStarted(false);
+      setStep('otp');
+
+      startTimer();
     } catch (err) {
-      enqueueSnackbar(err.error?.message || "Something went wrong", {
-        variant: "error",
+      enqueueSnackbar(err?.error?.message || 'Something went wrong', {
+        variant: 'error',
       });
     } finally {
       setIsSending(false);
     }
   };
+
+
+  const handlePhoneResendOtp = async () => {
+    if (!canResend || mobile.length !== 10) return;
+
+    try {
+      const res = await axiosInstance.post('/auth/send-phone-otp', {
+        phone: mobile,
+        role: 'company',
+      });
+
+      enqueueSnackbar('OTP resent successfully!', { variant: 'success' });
+
+      if (res.data?.sessionId) {
+        localStorage.setItem('sessionId', res.data.sessionId);
+      }
+
+      setOtp(Array(4).fill(''));
+      otpRefs.current[0]?.focus();
+
+      startTimer(); // 🔁 restart timer
+    } catch (err) {
+      enqueueSnackbar(
+        err?.error?.message || 'Failed to resend OTP',
+        { variant: 'error' }
+      );
+    }
+  };
+
+  const handleEmailResendOtp = async () => {
+    if (!canResend) return;
+
+    const emailValid = /[^\s@]+@[^\s@]+\.[^\s@]+/.test(email);
+    if (!emailValid) return;
+
+    try {
+      const sessionId = localStorage.getItem('sessionId');
+
+      const res = await axiosInstance.post('/auth/send-email-otp', {
+        sessionId,
+        email,
+        role: 'company',
+      });
+
+      enqueueSnackbar('Email OTP resent successfully!', { variant: 'success' });
+
+      setOtp(Array(4).fill(''));
+      otpRefs.current[0]?.focus();
+
+      startTimer(); // 🔁 restart same timer
+    } catch (err) {
+      enqueueSnackbar(
+        err?.error?.message || 'Failed to resend Email OTP',
+        { variant: 'error' }
+      );
+    }
+  };
+
+
 
 
   return (
@@ -242,10 +330,23 @@ const handleVerifyEmailOtp = async () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 40 }}
                 >
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Issuer Portal › Sign In
+
+                  <Typography
+                    variant="h4"
+                    sx={{ fontWeight: 700, mb: 1 }}
+                  >
+                    Issuer Portal
                   </Typography>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
+
+
+                  <Typography sx={{ mb: 1 }}
+                    variant="subtitle2"
+                    color="text.secondary"
+                  >
+                    Sign In
+                  </Typography>
+                  <Typography variant="subtitle2"
+                    color="text.secondary" sx={{ mb: 1 }}>
                     Aadhar linked mobile number
                   </Typography>
 
@@ -296,10 +397,12 @@ const handleVerifyEmailOtp = async () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 40 }}
                 >
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="subtitle2"
+                    color="text.secondary" gutterBottom>
                     Enter OTP
                   </Typography>
-                  <Typography sx={{ mb: 2 }}>We’ve sent an OTP to {mobile}</Typography>
+                  <Typography variant="subtitle2"
+                     sx={{ mb: 2 }}>We’ve sent an OTP to  <b>{mobile}</b> </Typography>
 
                   <Grid container spacing={2} sx={{ mb: 3 }}>
                     {otp.map((digit, i) => (
@@ -324,7 +427,21 @@ const handleVerifyEmailOtp = async () => {
                     ))}
                   </Grid>
 
-                  {/* <Typography variant="caption">Resend OTP in 19 seconds</Typography> */}
+                  <Typography textAlign="start" variant="body2" sx={{ mt: -1 }}>
+                    {!canResend ? (
+                      <>
+                        Resend OTP after <b>{timer}</b> seconds
+                      </>
+                    ) : (
+                      <>
+                        Didn’t receive OTP?{' '}
+                        <Button variant="text" onClick={handlePhoneResendOtp}>
+                          Resend OTP
+                        </Button>
+                      </>
+                    )}
+                  </Typography>
+
 
                   <Box sx={{ mt: 4 }}>
                     <Button onClick={handleBack} sx={{ mr: 2 }}>
@@ -348,10 +465,12 @@ const handleVerifyEmailOtp = async () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 40 }}
                 >
-                  <Typography variant="h6" gutterBottom>
+                  <Typography  variant="subtitle2"
+                    color="text.secondary" sx={{ mb: 1 }}>
                     Basic Details
                   </Typography>
-                  <Typography sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2"
+                    color="text.secondary" sx={{ mb: 1 }}>
                     Important updates will be sent to this email
                   </Typography>
 
@@ -387,10 +506,12 @@ const handleVerifyEmailOtp = async () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 40 }}
                 >
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="subtitle2"
+                    color="text.secondary" sx={{ mb: 1 }} >
                     Enter OTP
                   </Typography>
-                  <Typography sx={{ mb: 2 }}>We’ve sent an OTP to {email}</Typography>
+                  <Typography variant="subtitle2"
+                    sx={{ mb: 1 }}>We’ve sent an OTP to {email}</Typography>
 
                   <Grid container spacing={2} sx={{ mb: 3 }}>
                     {otp.map((digit, i) => (
@@ -415,12 +536,28 @@ const handleVerifyEmailOtp = async () => {
                     ))}
                   </Grid>
 
-                  <Typography variant="caption">
-                    If it hasn’t arrived, please check your spam folder
-                  </Typography>
-                  {/* <Typography variant="caption" display="block">
-                    Resend OTP in 15 seconds
-                  </Typography> */}
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="caption" sx={{ mb: 1, display: 'block' }}>
+                      If it hasn’t arrived, please check your spam folder
+                    </Typography>
+
+                    <Typography textAlign="start" variant="body2">
+                      {!canResend ? (
+                        <>
+                          Resend OTP after <b>{timer}</b> seconds
+                        </>
+                      ) : (
+                        <>
+                          Didn’t receive OTP?{' '}
+                          <Button variant="text" onClick={handleEmailResendOtp}>
+                            Resend OTP
+                          </Button>
+                        </>
+                      )}
+                    </Typography>
+                  </Box>
+
+
 
                   <Box sx={{ mt: 4 }}>
                     <Button onClick={handleBack} sx={{ mr: 2 }}>

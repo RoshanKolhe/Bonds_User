@@ -75,7 +75,6 @@ export default function KYCBasicInfo() {
     state: false,
     country: false,
     panNumber: false,
-    dateOfBirth: false,
     panHoldersName: false,
     // other fields if you want to track
   });
@@ -100,7 +99,6 @@ export default function KYCBasicInfo() {
     country: Yup.string().required('Country is required'),
     panFile: Yup.mixed().required('PAN file is required'),
     panNumber: Yup.string().required('PAN Number is required'),
-    dateOfBirth: Yup.date().required('Date Of Birth is required'),
     panHoldersName: Yup.string().required("PAN Holder's Name is required"),
     companyEntityTypeId: Yup.string().required("Entity Type is required"),
     companySectorTypeId: Yup.string().required("Sector is required"),
@@ -119,7 +117,6 @@ export default function KYCBasicInfo() {
       country: 'India',
       panFile: null,
       panNumber: '',
-      dateOfBirth: null,
       panHoldersName: '',
  
       panCardDocumentId: '',
@@ -174,11 +171,10 @@ export default function KYCBasicInfo() {
       const panData = extractRes?.data?.data || extractRes?.data;
 
       // Adjust these keys according to your actual API response
-      const panNumberFromApi = panData?.panNumber || panData?.extractedPanNumber || '';
-      const dobFromApi = panData?.dateOfBirth || panData?.extractedDateOfBirth || '';
-      const companyNameFromApi = panData?.companyName || panData?.extractedCompanyName || '';
+      const panNumberFromApi = panData?.extractedPanNumber || '';
+      const companyNameFromApi =panData?.extractedPanHolderName || '';
 
-      if (!panNumberFromApi && !dobFromApi && !companyNameFromApi) {
+      if (!panNumberFromApi &&  !companyNameFromApi) {
         // Treat as failure if nothing useful came back
         setPanExtractionStatus('failed');
         enqueueSnackbar(
@@ -190,7 +186,7 @@ export default function KYCBasicInfo() {
 
       // Fill form values from extraction
       if (companyNameFromApi) {
-        setValue('companyName', companyNameFromApi, {
+        setValue('panHoldersName', companyNameFromApi, {
           shouldValidate: true,
           shouldDirty: true,
         });
@@ -203,18 +199,10 @@ export default function KYCBasicInfo() {
         });
       }
 
-      if (dobFromApi) {
-        setValue('dateOfBirth', dayjs(dobFromApi).toDate(), {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-      }
-
       // Save extracted details in state for final payload
       const extracted = {
-        extractedCompanyName: companyNameFromApi || '',
+        extractedPanHolderName: companyNameFromApi || '',
         extractedPanNumber: panNumberFromApi || '',
-        extractedDateOfBirth: dobFromApi || '',
       };
 
       setExtractedPanDetails(extracted);
@@ -243,9 +231,6 @@ export default function KYCBasicInfo() {
         ? dayjs(formData.dateOfIncorporation).format('YYYY-MM-DD')
         : '';
 
-      const dobStr = formData.dateOfBirth
-        ? dayjs(formData.dateOfBirth).format('YYYY-MM-DD')
-        : '';
 
       const companyName = formData.companyName || '';
       const panNumber = formData.panNumber || '';
@@ -253,51 +238,39 @@ export default function KYCBasicInfo() {
       // Determine if user edited PAN-related fields vs extracted
       let userEditedPanFields = false;
 
-      if (extractedPanDetails && panExtractionStatus === 'success') {
-        const extractedDob = extractedPanDetails.extractedDateOfBirth || '';
+      if (extractedPanDetails ) {
         userEditedPanFields =
-          extractedPanDetails.extractedCompanyName !== companyName ||
-          extractedPanDetails.extractedPanNumber !== panNumber ||
-          extractedDob !== dobStr;
+          extractedPanDetails.extractedPanHolderName !== companyName ||
+          extractedPanDetails.extractedPanNumber !== panNumber 
+
       }
 
-      // Build extractedPanDetails & submittedPanDetails and humanInteraction
-      let extractedPanPayload = null;
-      let submittedPanPayload = null;
-      let humanInteractionFlag = false;
 
-      if (panExtractionStatus === 'success' && extractedPanDetails) {
-        if (userEditedPanFields) {
-          // Case: PAN successfully extracted + user CHANGED values manually
-          extractedPanPayload = { ...extractedPanDetails };
-          submittedPanPayload = {
-            submittedCompanyName: companyName,
-            submittedPanNumber: panNumber,
-            submittedDateOfBirth: dobStr,
+
+  const extractedPan = extractedPanDetails
+        ? {
+            extractedPanHolderName: extractedPanDetails.extractedPanHolderName || '',
+            extractedPanNumber: extractedPanDetails.extractedPanNumber || '',
+    
+          }
+        : {
+            extractedPanHolderName: formData.panHoldersName,
+            extractedPanNumber: formData.panNumber,
+      
           };
-          humanInteractionFlag = true;
-        } else {
-          // Case: PAN successfully extracted + user did NOT change values manually
-          // 👉 store extracted values only, set humanInteraction = false
-          extractedPanPayload = { ...extractedPanDetails };
-          submittedPanPayload = null;
-          humanInteractionFlag = false;
-        }
-      } else {
-        // Case: PAN extraction failed OR not called
-        // 👉 store manually entered values in BOTH extracted & submitted
-        extractedPanPayload = {
-          extractedCompanyName: companyName,
-          extractedPanNumber: panNumber,
-          extractedDateOfBirth: dobStr,
-        };
-        submittedPanPayload = {
-          submittedCompanyName: companyName,
-          submittedPanNumber: panNumber,
-          submittedDateOfBirth: dobStr,
-        };
-        humanInteractionFlag = true;
-      }
+
+      // Build submitted PAN object
+      const submittedPan = userEditedPanFields
+        ? {
+            submittedCompanyName: formData.panHoldersName,
+            submittedPanNumber: formData.panNumber,
+          }
+        : {
+            submittedCompanyName: formData.panHoldersName,
+            submittedPanNumber: formData.panNumber,
+          
+          };
+
 
       const payload = {
         sessionId,
@@ -309,9 +282,9 @@ export default function KYCBasicInfo() {
         cityOfIncorporation: formData.city || '',
         stateOfIncorporation: formData.state || '',
         countryOfIncorporation: formData.country || '',
-        humanInteraction: humanInteractionFlag,
-        extractedPanDetails: extractedPanPayload,
-        submittedPanDetails: submittedPanPayload,
+        humanInteraction: userEditedPanFields ? true : false,
+        extractedPanDetails: extractedPan,
+        submittedPanDetails: submittedPan,
         panCardDocumentId: formData.panCardDocumentId || '',
         companySectorTypeId: formData.companySectorTypeId,
         companyEntityTypeId: formData.companyEntityTypeId,
@@ -349,7 +322,7 @@ export default function KYCBasicInfo() {
       enqueueSnackbar(
         typeof error === 'string'
           ? error
-          : error?.response?.data?.message || error?.message || 'Error occurred',
+          : error?.error?.message || error?.message || 'Error occurred',
         {
           variant: 'error',
         }
@@ -708,7 +681,7 @@ export default function KYCBasicInfo() {
             </Grid>
 
             {/* Date of Birth (Right) */}
-            <Grid item xs={12} md={6}>
+            {/* <Grid item xs={12} md={6}>
               <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Iconify icon="solar:calendar-bold" width={24} />
                 <Box component="span" sx={{ fontWeight: 600 }}>
@@ -738,7 +711,7 @@ export default function KYCBasicInfo() {
                   />
                 )}
               />
-            </Grid>
+            </Grid> */}
 
             {/* PAN Holder’s Name (Full width below) */}
             <Grid item xs={12} md={6}>

@@ -124,9 +124,16 @@ export default function IssuerProcessTimeline() {
               <TimelineDot sx={{ bgcolor: step.color, boxShadow: 'none', p: 2 }}>
                 <Iconify icon={step.icon} width={28} color="#fff" />
               </TimelineDot>
-              {index < STEPS.length - 1 && (
-                <TimelineConnector sx={{ bgcolor: alpha(step.color, 0.4), width: 3 }} />
-              )}
+              <TimelineConnector
+                sx={{
+                  bgcolor: alpha(step.color, 0.4),
+                  width: 3,
+                  display:
+                    index === STEPS.length - 1
+                      ? { xs: 'block', sm: 'none' } 
+                      : 'block',                   
+                }}
+              />
             </TimelineSeparator>
             <TimelineContent sx={{ py: 2, px: { xs: 0, md: 2 }, textAlign: 'center' }}>
               <StyledTimelineContent>

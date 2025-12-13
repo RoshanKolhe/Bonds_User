@@ -1,6 +1,6 @@
 import { m } from 'framer-motion';
 // @mui
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
 import { Box, Button, Container, Stack, Typography } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 import MultiStepLoginDialog from '../user/issuer-login';
@@ -12,11 +12,12 @@ import { RouterLink } from 'src/routes/components';
 
 export default function HomeGetStarted() {
   const [openLogin, setOpenLogin] = useState(false);
+  const theme = useTheme();
   return (
     <Container maxWidth="lg" sx={{ pt: { xs: 6, md: 15 } }}>
       <Box
         sx={{
-          background: 'linear-gradient(180deg, #AFCBFF 0%, #8979FF 100%)',
+          // background: 'linear-gradient(180deg, #AFCBFF 0%, #8979FF 100%)',
           borderRadius: '6px',
           p: { xs: 3, md: 5 },
           textAlign: 'center',
@@ -34,16 +35,20 @@ export default function HomeGetStarted() {
           <Button
             variant="contained"
             size="large"
+            color='primary'
             onClick={() => setOpenLogin(true)}
             sx={{
-              bgcolor: 'black',
-              color: 'white',
-              '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.8)' },
-              fontWeight: 500,
-              px: 4,
-              py: 1.5,
-              borderRadius: '3px',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontStyle: 'bold',
+              fontSize: '14px',
+              px: '24px',
+              py: '6px',
+              '&:hover': {
+                bgcolor: theme.palette.primary.dark,
+              },
             }}
+
           >
             Start Registration
           </Button>

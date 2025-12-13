@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { m } from 'framer-motion';
 // @mui
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -32,18 +32,21 @@ const StyledContent = styled('div')(({ theme }) => ({
 
 export default function HomeHero() {
   const [openLogin, setOpenLogin] = useState(false);
+    const theme = useTheme();
 
   return (
     <Box
       component='div'
       sx={{
-        mt: { xs: 0, md: 10 },
+        mt: { xs: 0 },
         width: '100%',
         height: 'auto',
         position: 'relative',
 
       }}
     >
+
+      {/* md:5 */}
       <Box
         component="img"
         src="/assets/images/issuer/hero/hero.png"
@@ -59,7 +62,7 @@ export default function HomeHero() {
         sx={{
           position: 'absolute',
           top: '50%',
-          right: {md:170},
+          right: { md: 170 },
           left: 0,
           zIndex: 10,
           transform: 'translateY(-50%)', // <-- This centers vertically
@@ -101,22 +104,20 @@ export default function HomeHero() {
                       <Button
                         variant="contained"
                         size="large"
+                        color="primary"
                         onClick={() => setOpenLogin(true)}
                         sx={{
-                          bgcolor: '#000000',
-                          color: '#FFFFFF',
-                          borderRadius: '10px',
-                          px: 4,
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          fontStyle: 'bold',
+                          fontSize: '14px',
+                          px: '24px',
+                          py: '6px',
                           '&:hover': {
-                            bgcolor: '#333333',
-                          },
-                          '& .MuiButton-label': {
-                            typography: 'h5',
-                            fontWeight: 500,
-                            textTransform: 'none',
-                            letterSpacing: 0,
+                            bgcolor: theme.palette.primary.dark,
                           },
                         }}
+
                       >
                         Start Registration
                       </Button>
@@ -175,6 +176,6 @@ export default function HomeHero() {
           </Grid>
         </StyledHero>
       </Container>
-    </Box>
+    </Box >
   );
 }

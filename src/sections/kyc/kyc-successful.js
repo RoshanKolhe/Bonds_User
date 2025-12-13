@@ -85,8 +85,8 @@ export default function KYCSuccessful() {
       <Box sx={{ textAlign: 'center', mt: 4 }}>
         <m.div variants={varFade().inUp}>
           <Button
-            component={RouterLink}
-            href={paths.dashboard.root}
+            // component={RouterLink}
+            // href={paths.dashboard.root}
             size="large"
             variant="contained"
           >
